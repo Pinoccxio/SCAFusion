@@ -58,7 +58,7 @@ train_result/20250507_181101/best_object/map_epoch_16.pth \
 
 ### 4.2 库设置
 1. nuscenes-devkit的设置参考[502钉钉文档](src="https://alidocs.dingtalk.com/i/nodes/Y1OQX0akWmPX9gYnUo32vZDd8GlDd3mE")
-2. mmcv设置（根据自身conda环境路径来）
+2. mmcv设置（根据自身conda环境路径和项目路径来）
 ```bash
 A. 进入~/miniconda3/envs/bev/lib/python3.8/site-packages/mmdet/models/backbones
 B. 将502/BEVFusion-ROS-TensorRT-sim-10/bevfusion/mmdet3d/models/backbones/swin_mona.py放入以上目录
