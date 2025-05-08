@@ -1,0 +1,56 @@
+model:
+  encoders:
+    camera:
+      neck:
+        type: GeneralizedLSSFPN
+        in_channels: [192, 384, 768]  # [512, 1024, 2048]
+        out_channels: 256
+        start_level: 0
+        num_outs: 3
+        norm_cfg:
+          type: BN2d
+          requires_grad: true
+        act_cfg:
+          type: ReLU
+          inplace: true
+        upsample_cfg:
+          mode: bilinear
+          align_corners: false
+      vtransform:
+        type: DepthLSSTransform  #! DepthLSSTransformAlign
+        in_channels: 256
+        out_channels: 80
+        image_size: ${image_size}
+        feature_size: ${[image_size[0] // 8, image_size[1] // 8]}
+        xbound: [-54.0, 54.0, 0.3] #  [-51.2, 51.2, 0.4]
+        ybound: [-54.0, 54.0, 0.3] # [-51.2, 51.2, 0.4]
+        zbound: [-10.0, 10.0, 20.0]
+        dbound: [1.0, 60.0, 0.5]
+        downsample: 2
+    lidar:
+      voxelize_reduce: True  
+      voxelize:
+        max_num_points: 10
+        point_cloud_range: ${point_cloud_range}
+        voxel_size: ${voxel_size}
+        max_voxels: [120000, 160000] # [90000, 120000] 
+      backbone:
+        type: SparseEncoder
+        in_channels: 5
+        sparse_shape: [1440, 1440, 41] # 体素化后的空间大小
+        output_channels: 128
+        order:
+          - conv
+          - norm
+          - act
+        encoder_channels: # 编码器各层通道变化
+          - [16, 16, 32]
+          - [32, 32, 64]
+          - [64, 64, 128]
+          - [128, 128]
+        encoder_paddings: # 编码器各层padding
+          - [0, 0, 1]
+          - [0, 0, 1]
+          - [0, 0, [1, 1, 0]] # [1,1,0] 表示在x,y,z方向上padding 1,1,0
+          - [0, 0]
+        block_type: basicblock # 编码器各层block类型 残差

@@ -1,0 +1,307 @@
+dataset_type: NuScenesDataset                # 数据集类型：nuScenes数据集
+dataset_root: /root/dataset/502_isaac_bags/anno_folder/data_0408/nuscenes/  #! 修改 
+eval_version: detection_cvpr_2019 #! 新增 修改
+sweeps_num: 4 #! 新增 nusc 9  sim 4
+gt_filter_min_points:
+  # car: 5                                                        # 汽车最少5个点
+  # truck: 5                                                      # 卡车最少5个点
+  # bus: 5                                                        # 公交车最少5个点
+  # trailer: 5                                                    # 拖车最少5个点
+  # construction_vehicle: 5                                       # 工程车最少5个点
+  # traffic_cone: 5                                              # 交通锥最少5个点
+  # barrier: 5                                                   # 障碍物最少5个点
+  # motorcycle: 5                                                # 摩托车最少5个点
+  # bicycle: 5                                                   # 自行车最少5个点
+  # pedestrian: 5                                                # 行人最少5个点
+  meteor: 5                                                  #! 新增 修改
+  platform: 5
+gt_sample_groups: 
+  # car: 2                                                         # 汽车采样2个
+  # truck: 3                                                       # 卡车采样3个
+  # construction_vehicle: 7                                        # 工程车采样7个
+  # bus: 4                                                         # 公交车采样4个
+  # trailer: 6                                                     # 拖车采样6个
+  # barrier: 2                                                     # 障碍物采样2个
+  # motorcycle: 6                                                  # 摩托车采样6个
+  # bicycle: 6                                                     # 自行车采样6个
+  # pedestrian: 2                                                  # 行人采样2个
+  # traffic_cone: 2                                               # 交通锥采样2个
+  meteor: 5                                         #! 新增 修改
+  platform: 5
+gt_paste_stop_epoch: -1                      #! 修改此控制是否使用ObjectPaste
+collect_3d_keys:
+  - img                                             # 图像数据
+  - points                                          # 点云数据
+  - gt_bboxes_3d                                    # 3D边界框真值
+  - gt_labels_3d                                    # 3D标签真值
+  # - gt_masks_bev                                    # BEV视角掩码真值 #! 修改
+reduce_beams: 32                             # 降采样后的激光雷达线数
+load_dim: 5                                  # 加载点云时的维度
+use_dim: 5                                   # 使用点云的维度
+load_augmented: null                         # 是否加载增强数据，null表示不加载
+
+point_cloud_range: [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]  # 点云范围[x_min, y_min, z_min, x_max, y_max, z_max]
+voxel_size: [0.1, 0.1, 0.2]                 # 体素大小[x, y, z]
+image_size: [256, 704]                      # 图像尺寸[高度, 宽度]
+
+augment2d:                                   # 2D数据增强配置 用于ImageAug3D GridMask
+  resize: [[0.38, 0.55], [0.48, 0.48]]      # 随机缩放范围 前者训练后者测试
+  rotate: [-5.4, 5.4]                       # 随机旋转角度范围(度)
+  gridmask:                                 # 网格遮罩增强 GridMask
+    prob: 0.0                               # 使用概率 #! 修改此可以控制是否使用GridMask
+    fixed_prob: true                        # 是否使用固定概率
+
+augment3d:                                  # 3D数据增强配置 用于GlobalRotScaleTrans
+  scale: [0.9, 1.1]                        # 随机缩放范围
+  rotate: [-0.78539816, 0.78539816]        # 随机旋转角度范围(弧度)
+  translate: 0.5                           # 随机平移范围
+
+object_classes:
+  # - car
+  # - truck
+  # - construction_vehicle
+  # - bus
+  # - trailer
+  # - barrier
+  # - motorcycle
+  # - bicycle
+  # - pedestrian
+  # - traffic_cone
+  - meteor   #! 新增 修改
+  - platform   #! 新增 修改
+map_classes:
+  - drivable_area
+  # - drivable_area*
+  - ped_crossing
+  - walkway
+  - stop_line
+  - carpark_area
+  # - road_divider
+  # - lane_divider
+  - divider
+
+input_modality:
+  use_lidar: true
+  use_camera: true
+  use_radar: false
+  use_map: false
+  use_external: false
+
+train_pipeline:
+  -
+    type: LoadMultiViewImageFromFiles
+    to_float32: true
+  -
+    type: LoadPointsFromFile
+    coord_type: LIDAR
+    load_dim: ${load_dim}
+    use_dim: ${use_dim}
+    reduce_beams: ${reduce_beams}
+    load_augmented: ${load_augmented}  # 使用mvp 或 pointpainting
+  -
+    type: LoadPointsFromMultiSweeps          # 从多个扫描中加载点云数据
+    sweeps_num: ${sweeps_num}               # 加载的扫描帧数 设置为9 因为sweeps的最后一个是上一次的sample
+    load_dim: ${load_dim}                    # 加载点云的维度
+    use_dim: ${use_dim}                      # 使用点云的维度 
+    reduce_beams: ${reduce_beams}            # 激光束ring数量  
+    pad_empty_sweeps: true                   # 是否对空扫描进行填充(用sample帧填充)
+    remove_close: true                       # 是否移除近距离点 仅从x和y方向上移除距离原点小于1.0的点 排除自车干扰等因素
+    load_augmented: ${load_augmented}        # 是否加载增强的数据
+  -
+    type: LoadAnnotations3D
+    with_bbox_3d: true
+    with_label_3d: true
+    with_attr_label: False
+  -
+    type: ObjectPaste                                                     # 对象粘贴增强 
+    stop_epoch: ${gt_paste_stop_epoch}                                   # 停止使用GT增强的轮数
+    db_sampler:                                                          # 数据库采样器配置
+      dataset_root: ${dataset_root}                                      # 数据集根目录
+      info_path: ${dataset_root + "nuscenes_dbinfos_train.pkl"}         # 数据库信息文件路径 #TODO 使用了dbinfos
+      rate: 1.0                                                          # 采样率
+      prepare:                                                           # 用以过滤gt_database
+        filter_by_difficulty: [-1]                                       # 按难度过滤
+        filter_by_min_points: ${gt_filter_min_points}
+      classes: ${object_classes}
+      sample_groups: ${gt_sample_groups}
+      points_loader:                                                  
+        type: LoadPointsFromFile
+        coord_type: LIDAR
+        load_dim: ${load_dim}
+        use_dim: ${use_dim}
+        reduce_beams: ${reduce_beams}
+  -
+    type: ImageAug3D
+    final_dim: ${image_size}
+    resize_lim: ${augment2d.resize[0]}
+    bot_pct_lim: [0.0, 0.0]
+    rot_lim: ${augment2d.rotate}
+    rand_flip: true
+    is_train: true
+  -
+    type: GlobalRotScaleTrans                           
+    resize_lim: ${augment3d.scale}                     
+    rot_lim: ${augment3d.rotate}                       
+    trans_lim: ${augment3d.translate}                  
+    is_train: true                                      
+  # -
+  #   type: LoadBEVSegmentation
+  #   dataset_root: ${dataset_root}
+  #   xbound: [-50.0, 50.0, 0.5]
+  #   ybound: [-50.0, 50.0, 0.5]
+  #   classes: ${map_classes}
+  -
+    type: RandomFlip3D
+  -
+    type: PointsRangeFilter
+    point_cloud_range: ${point_cloud_range}
+  -
+    type: ObjectRangeFilter
+    point_cloud_range: ${point_cloud_range}
+  -
+    type: ObjectNameFilter
+    classes: ${object_classes}
+  -
+    type: ImageNormalize
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+  - 
+    type: GridMask                                      
+    use_h: true                                        
+    use_w: true
+    max_epoch: ${max_epochs}
+    rotate: 1
+    offset: false
+    ratio: 0.5
+    mode: 1
+    prob: ${augment2d.gridmask.prob}
+    fixed_prob: ${augment2d.gridmask.fixed_prob}      
+  -
+    type: PointShuffle                                  # 这对voxelize阶段有用 因为max_voxel会以先到先得的方式截断
+  -
+    type: DefaultFormatBundle3D
+    classes: ${object_classes}
+  -
+    type: Collect3D                                     
+    keys: ${collect_3d_keys}                            
+    meta_keys:                                         
+      - camera_intrinsics                               
+      - camera2ego                                      
+      - lidar2ego                                      
+      - lidar2camera                                    
+      - camera2lidar                                    
+      - lidar2image                                    
+      - img_aug_matrix                                 
+      - lidar_aug_matrix                               
+
+test_pipeline:
+  -
+    type: LoadMultiViewImageFromFiles
+    to_float32: true
+  -
+    type: LoadPointsFromFile
+    coord_type: LIDAR
+    load_dim: ${load_dim}
+    use_dim: ${use_dim}
+    reduce_beams: ${reduce_beams}
+    load_augmented: ${load_augmented}
+  -
+    type: LoadPointsFromMultiSweeps
+    sweeps_num: ${sweeps_num}  
+    load_dim: ${load_dim}
+    use_dim: ${use_dim}
+    reduce_beams: ${reduce_beams}
+    pad_empty_sweeps: true
+    remove_close: true
+    load_augmented: ${load_augmented}
+  -
+    type: LoadAnnotations3D
+    with_bbox_3d: true
+    with_label_3d: true
+    with_attr_label: False
+  -
+    type: ImageAug3D
+    final_dim: ${image_size}
+    resize_lim: ${augment2d.resize[1]}
+    bot_pct_lim: [0.0, 0.0]
+    rot_lim: [0.0, 0.0]
+    rand_flip: false
+    is_train: false
+  -
+    type: GlobalRotScaleTrans
+    resize_lim: [1.0, 1.0]
+    rot_lim: [0.0, 0.0]
+    trans_lim: 0.0
+    is_train: false
+  # -
+  #   type: LoadBEVSegmentation
+  #   dataset_root: ${dataset_root}
+  #   xbound: [-50.0, 50.0, 0.5]
+  #   ybound: [-50.0, 50.0, 0.5]
+  #   classes: ${map_classes}
+  -
+    type: PointsRangeFilter
+    point_cloud_range: ${point_cloud_range}
+  -
+    type: ImageNormalize
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+  -
+    type: DefaultFormatBundle3D
+    classes: ${object_classes}
+  -
+    type: Collect3D
+    keys: ${collect_3d_keys}
+    meta_keys:
+      - camera_intrinsics
+      - camera2ego
+      - lidar2ego
+      - lidar2camera
+      - camera2lidar
+      - lidar2image
+      - img_aug_matrix
+      - lidar_aug_matrix
+
+data:
+  #? spg 只对train有效， wpg对所有有效
+  samples_per_gpu: 6 # 4    #TODO 每个gpu每次处理的batchsize数量,根据计算资源自行更改 batch_size = num_gpus * samples_per_gpu
+  workers_per_gpu: 8 # 4    #TODO 线程数num_workers = num_gpus * workers_per_gpu
+  train:
+    type: CBGSDataset  # 使用类别平衡的数据集采样器,CBGSDataset(Class-Balanced Grouped Sampling Dataset)可以平衡不同类别样本的数量
+    dataset:
+      type: ${dataset_type}
+      dataset_root: ${dataset_root}
+      ann_file: ${dataset_root + "nuscenes_infos_train.pkl"}
+      pipeline: ${train_pipeline}
+      object_classes: ${object_classes}
+      map_classes: ${map_classes} #! 修改
+      modality: ${input_modality}
+      test_mode: false
+      use_valid_flag: true
+      box_type_3d: LiDAR
+      eval_version : ${eval_version}
+  val:
+    type: ${dataset_type}
+    dataset_root: ${dataset_root}
+    ann_file: ${dataset_root + "nuscenes_infos_val.pkl"}
+    pipeline: ${test_pipeline}
+    object_classes: ${object_classes}
+    map_classes: ${map_classes} #! 修改
+    modality: ${input_modality}
+    test_mode: false
+    box_type_3d: LiDAR
+    eval_version : ${eval_version} 
+  test: # 与val仅有test_mode不同
+    type: ${dataset_type}
+    dataset_root: ${dataset_root}
+    ann_file: ${dataset_root + "nuscenes_infos_val.pkl"}
+    pipeline: ${test_pipeline}
+    object_classes: ${object_classes}
+    map_classes: ${map_classes} #! 修改
+    modality: ${input_modality}
+    test_mode: true
+    box_type_3d: LiDAR
+    eval_version : ${eval_version} 
+
+
+ 

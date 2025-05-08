@@ -1,0 +1,88 @@
+import numpy as np
+
+from .builder import DATASETS
+
+
+@DATASETS.register_module()
+class CBGSDataset:
+    """A wrapper of class sampled dataset with ann_file path. Implementation of
+    paper `Class-balanced Grouping and Sampling for Point Cloud 3D Object
+    Detection <https://arxiv.org/abs/1908.09492.>`_.
+
+    Balance the number of scenes under different classes.
+
+    Args:
+        dataset (:obj:`CustomDataset`): The dataset to be class sampled.
+    """
+
+    def __init__(self, dataset):
+        self.dataset = dataset
+        self.CLASSES = dataset.CLASSES
+        self.cat2id = {name: i for i, name in enumerate(self.CLASSES)}
+        self.sample_indices = self._get_sample_indices()
+        # self.dataset.data_infos = self.data_infos
+        if hasattr(self.dataset, "flag"): # 如果数据集有flag属性，则根据sample_indices重新组织flag
+            self.flag = np.array([self.dataset.flag[ind] for ind in self.sample_indices], dtype=np.uint8)
+    
+    def set_epoch(self, epoch):
+        self.dataset.set_epoch(epoch)
+
+    def _get_sample_indices(self):
+        """Load annotations from ann_file.
+
+        Args:
+            ann_file (str): Path of the annotation file.
+
+        Returns:
+            list[dict]: List of annotations after class sampling.
+        """
+        
+        # 创建每个类别对应的样本索引字典 比如{0: [0,1,3], 1: [78,81], ...}
+        class_sample_idxs = {cat_id: [] for cat_id in self.cat2id.values()}
+        
+        # 遍历数据集,统计每个类别包含的样本索引
+        for idx in range(len(self.dataset)):
+            sample_cat_ids = self.dataset.get_cat_ids(idx)
+            for cat_id in sample_cat_ids:
+                class_sample_idxs[cat_id].append(idx)
+        # print(class_sample_idxs[1]) #! []
+                
+        # 计算所有类别的样本总数(含重复)
+        duplicated_samples = sum([len(v) for _, v in class_sample_idxs.items()])
+        
+        # 计算每个类别的样本分布比例 比如{0: 0.25, 1: 0.1, ...}
+        class_distribution = {
+            k: len(v) / duplicated_samples for k, v in class_sample_idxs.items()
+        }
+
+        sample_indices = []
+
+        # 计算期望的均匀分布比例
+        frac = 1.0 / len(self.CLASSES)
+        # 计算每个类别需要的采样比例
+        print(class_distribution) #!
+        ratios = [frac / v for v in class_distribution.values()]
+        
+        # 对每个类别按照计算出的比例进行随机采样
+        for cls_inds, ratio in zip(list(class_sample_idxs.values()), ratios):
+            sample_indices += np.random.choice(
+                cls_inds, int(len(cls_inds) * ratio)    # ratio可能大于1，又默认允许重复采样，所以可能大于cls_inds的长度
+            ).tolist() # 相当于extend
+        return sample_indices # 1630 条info，对于v1.0-mini-train, 原始只有323条
+
+    def __getitem__(self, idx):
+        """Get item from infos according to the given index.
+
+        Returns:
+            dict: Data dictionary of the corresponding index.
+        """
+        ori_idx = self.sample_indices[idx]
+        return self.dataset[ori_idx]
+
+    def __len__(self):
+        """Return the length of data infos.
+
+        Returns:
+            int: Length of data infos.
+        """
+        return len(self.sample_indices) # 1630

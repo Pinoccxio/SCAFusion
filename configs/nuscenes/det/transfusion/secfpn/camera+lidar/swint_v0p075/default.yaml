@@ -1,0 +1,28 @@
+voxel_size: [0.075, 0.075, 0.2]
+point_cloud_range: [-54.0, -54.0, -5.0, 54.0, 54.0, 3.0]
+
+model:
+  encoders:
+    camera:
+      backbone:
+        type: SwinTransformer_mona  # mona
+        embed_dims: 96  # token 维度
+        depths: [2, 2, 6, 2]  # 每个stage中stage block的数量
+        num_heads: [3, 6, 12, 24] # 每个stage中多注意力head的数量
+        window_size: 7 # 窗口大小 一个窗口49个patch  一个patch 16像素
+        mlp_ratio: 4 # 多层感知器比例 隐藏层:输入层=4:1
+        qkv_bias: true # 是否使用偏置
+        qk_scale: null # 缩放因子 默认点积缩放
+        drop_rate: 0. # 随机丢弃率
+        attn_drop_rate: 0. # 注意力丢弃率
+        drop_path_rate: 0.2 # 随机深度丢弃率
+        patch_norm: true # 是否使用层归一化
+        out_indices: [1, 2, 3] # 输出第1,2,3个stage的特征
+        with_cp: false # 是否使用检查点来节省显存
+        convert_weights: true # 是否转换权重
+        init_cfg:
+          type: Pretrained
+          # checkpoint: pretrained/swin_tiny_patch4_window7_224.pth
+          checkpoint: pretrained/swint-nuimages-pretrained.pth
+
+
