@@ -4,8 +4,8 @@ point_cloud_range: [-54.0, -54.0, -5.0, 54.0, 54.0, 3.0]
 model:
   encoders:
     camera:
-      backbone:
-        type: SwinTransformer_mona  # mona
+      backbone: # 不用mona就设置为SwinTransformer
+        type: SwinTransformer_mona  #TODO Multi-cognitive Visual Adapter
         embed_dims: 96  # token 维度
         depths: [2, 2, 6, 2]  # 每个stage中stage block的数量
         num_heads: [3, 6, 12, 24] # 每个stage中多注意力head的数量

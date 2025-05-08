@@ -6,7 +6,7 @@ model:
   decoder: null
   heads: null  
 
-  aux_flag: false  #TODO
+  aux_flag: true  #TODO Camera auxiliary training branch
   aux_decoder:
     backbone:
       type: GeneralizedResNet

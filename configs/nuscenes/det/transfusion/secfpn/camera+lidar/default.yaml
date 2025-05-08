@@ -16,8 +16,8 @@ model:
         upsample_cfg:
           mode: bilinear
           align_corners: false
-      vtransform:
-        type: DepthLSSTransform  #! DepthLSSTransformAlign
+      vtransform: # 不用对齐就改为DepthLSSTransform
+        type: DepthLSSTransformAlign  #TODO Contrastive Alignment
         in_channels: 256
         out_channels: 80
         image_size: ${image_size}
