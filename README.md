@@ -1,4 +1,4 @@
-# Fusion4CA
+# SCAFusion
 ## 1 Improvement Overview
 We have made 4 "CA" improvements based on BEVFusion:
 <img src="./asset/SCAFusion-pipeline.png">
