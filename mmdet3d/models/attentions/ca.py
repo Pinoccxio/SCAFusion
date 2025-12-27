@@ -5,7 +5,7 @@ from torch import nn
 from mmdet3d.models.builder import ATTENTIONS
 
 __all__ = ["CA",
-        #"CSA"
+        "SCA"
         ]
 
 
@@ -69,21 +69,21 @@ class CA(nn.Module):
 
         return y
 
-# class CSA(nn.Module):
-#     def __init__(self, in_channels, out_channels, groups=32):
-#         super(CSA, self).__init__()
-#         self.ca = CA(in_channels, out_channels, groups)
-#         self.relu = h_swish()
+class SCA(nn.Module):
+    def __init__(self, in_channels, out_channels, groups=32):
+        super(CSA, self).__init__()
+        self.ca = CA(in_channels, out_channels, groups)
+        self.relu = h_swish()
 
-#     def forward(self, x):
-#         # CA
-#         x = self.ca(x)
-#         # SA
-#         avg_out = torch.mean(x, dim=1, keepdim=True) # (B, 1, 180, 180)
-#         max_out, _ = torch.max(x, dim=1, keepdim=True) # (B, 1, 180, 180)
-#         spatial_out = torch.cat([avg_out, max_out], dim=1) # (B, 2, 180, 180)
-#         spatial_out = self.relu(self.conv(spatial_out)) # (B, 1, 180, 180)
+    def forward(self, x):
+        # CA
+        x = self.ca(x)
+        # SA
+        avg_out = torch.mean(x, dim=1, keepdim=True) # (B, 1, 180, 180)
+        max_out, _ = torch.max(x, dim=1, keepdim=True) # (B, 1, 180, 180)
+        spatial_out = torch.cat([avg_out, max_out], dim=1) # (B, 2, 180, 180)
+        spatial_out = self.relu(self.conv(spatial_out)) # (B, 1, 180, 180)
 
-#         x = x * spatial_out
-#         return x
+        x = x * spatial_out
+        return x
 

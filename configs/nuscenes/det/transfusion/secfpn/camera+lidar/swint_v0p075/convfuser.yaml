@@ -18,7 +18,7 @@ model:
   #   type: CBAM
   #   in_channels: 256
   attention: #TODO Coordinate Attention
-    type: CA
+    type: SCA
     in_channels: 256
     out_channels: 256
 
