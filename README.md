@@ -10,14 +10,14 @@ We have made 4 "CA" improvements based on BEVFusion:
 ## 2 Index
 6 epochs on nuScenes and 10 epochs on Sim-Lunar:
 
-| Dataset     | Method           | mAP       | NDS       |
-|-------------|------------------|-----------|-----------|
-| nuScenes    | BEVFusion        | 64.7      | 69.4      |
-| nuScenes    | SCAFusion        | 69.7      | 72.1      |
-| Sim-Lunar   | IS-Fusion        | 71.06     | 66.92     |
-| Sim-Lunar   | BEVFusion        | 79.38     | 73.34     |
-| Sim-Lunar   | MV2DFusion       | 81.46     | 68.50     |
-| Sim-Lunar   | **SCAFusion4CA** | **90.93** | **82.68** |
+| Dataset     | Method        | mAP       | NDS       |
+|-------------|---------------|-----------|-----------|
+| nuScenes    | BEVFusion     | 64.7      | 69.4      |
+| nuScenes    | SCAFusion     | 69.7      | 72.1      |
+| Sim-Lunar   | IS-Fusion     | 71.06     | 66.92     |
+| Sim-Lunar   | BEVFusion     | 79.38     | 73.34     |
+| Sim-Lunar   | MV2DFusion    | 81.46     | 68.50     |
+| Sim-Lunar   | **SCAFusion** | **90.93** | **82.68** |
 
 
 <img src="./asset/cam_frame0010.png" width="400">
